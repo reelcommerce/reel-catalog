@@ -15,7 +15,7 @@ Single line, the release id it currently points at:
 
 ```json
 {
-  "product": "reel-os",
+  "product": "reel-builder",
   "variant": "builder",
   "release": "2026-07-17T0815Z",
   "created_utc": "2026-07-17T08:15:03Z",
@@ -40,7 +40,7 @@ migration; clients that request a missing arch fall back to `arm64`.
 Compose `--env-file` friendly. Each line is `KEY=repo@sha256:<digest>`:
 
 ```dotenv
-# reel-os / builder / arm64
+# reel-builder / builder / arm64
 BUILDER_SERVICE_IMAGE=reelcommerce/builder-service@sha256:<64hex>
 DASHBOARD_SERVICE_IMAGE=reelcommerce/dashboard-service@sha256:<64hex>
 DASHBOARD_UI_IMAGE=reelcommerce/dashboard-ui@sha256:<64hex>

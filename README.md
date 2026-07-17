@@ -5,10 +5,18 @@ Public, immutable, digest-pinned release catalog for all Reel products.
 Supersedes `reel-releases`. Runtime clients resolve a release from three values:
 
 ```text
-PRODUCT   e.g. reel-os
-VARIANT   e.g. cinema | builder | gateway | runner
-CHANNEL   e.g. stable | latest | beta | nightly
+PRODUCT   the publishing project — reel-docker | reel-builder
+VARIANT   the station flavour     — cinema | builder
+CHANNEL   the release track        — stable | latest | beta | nightly
 ```
+
+The catalog tracks **container image pins** (compose `--env-file` friendly),
+resolved at first boot by the station's docker stack:
+
+| Product        | Variant  | Published by            | Consumed by            |
+| -------------- | -------- | ----------------------- | ---------------------- |
+| `reel-docker`  | `cinema` | reel-docker CI          | cinema-rpi station     |
+| `reel-builder` | `builder`| reel-builder CI         | builder-rpi station    |
 
 ## Hierarchy
 
