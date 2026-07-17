@@ -32,6 +32,11 @@ Single line, the release id it currently points at:
 }
 ```
 
+Each architecture entry references one or both artifact kinds:
+
+- `"env": "manifest.<arch>.env"` — docker image pins (reel-docker, reel-builder).
+- `"image": "image.<arch>.json"` — a flashable OS image (reel-os).
+
 `arm64` is the default fleet arch. `amd64` may be an empty stub during
 migration; clients that request a missing arch fall back to `arm64`.
 
@@ -50,4 +55,27 @@ Validation (enforced by `publish.py` and device `reel-release.sh`):
 
 - every non-comment line matches `^[A-Z0-9_]+=.+@sha256:[a-f0-9]{64}$`
 - at least one `*_IMAGE=` entry
+- no secret-looking tokens
+
+## OS-image manifest — `.../image.<arch>.json`
+
+Describes a flashable OS image (product `reel-os`, `variant = <site-id>`). The
+binary itself lives as a GitHub Release asset in `reelcommerce/reel-os`; the
+catalog only records a pinned pointer to it:
+
+```json
+{
+  "filename": "reel-os-site-beckenham-london-uk-20260717-1200.img.gz",
+  "sha256": "<64hex>",
+  "url": "https://github.com/reelcommerce/reel-os/releases/download/<tag>/<filename>",
+  "bytes": 123456789,
+  "tag": "site-beckenham-london-uk-20260717-1200"
+}
+```
+
+Validation (enforced by `publish.py`):
+
+- `filename` non-empty
+- `sha256` matches `^[a-f0-9]{64}$`
+- `url` begins with `https://`
 - no secret-looking tokens
