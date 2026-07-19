@@ -1,0 +1,18 @@
+{
+  "product": "reel-builder",
+  "variant": "builder",
+  "channel": "stable",
+  "release": "2026-07-19T0918Z",
+  "created_utc": "2026-07-19T09:18:55Z",
+  "source": {
+    "repo": "reelcommerce/reel-builder",
+    "sha": "cc005398755448ae9e6fd4d0decd769c386b7875",
+    "workflow": "CI Release",
+    "run_id": "29681305998"
+  },
+  "architectures": {
+    "arm64": {
+      "env": "manifest.arm64.env"
+    }
+  }
+}
