@@ -1,0 +1,18 @@
+{
+  "product": "reel-docker",
+  "variant": "cinema",
+  "channel": "stable",
+  "release": "2026-08-21T2319Z",
+  "created_utc": "2026-08-21T23:19:13Z",
+  "source": {
+    "repo": "reelcommerce/reel-docker",
+    "sha": "52b6641b93460e0cce7426680f305db23f884d86",
+    "workflow": "CI Build",
+    "run_id": "32536099442"
+  },
+  "architectures": {
+    "arm64": {
+      "env": "manifest.arm64.env"
+    }
+  }
+}
