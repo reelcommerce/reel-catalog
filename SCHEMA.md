@@ -37,8 +37,9 @@ Each architecture entry references one or both artifact kinds:
 - `"env": "manifest.<arch>.env"` — docker image pins (reel-docker, reel-builder).
 - `"image": "image.<arch>.json"` — a flashable OS image (reel-os).
 
-`arm64` is the default fleet arch. `amd64` may be an empty stub during
-migration; clients that request a missing arch fall back to `arm64`.
+`arm64` is the default fleet arch for cinema/builder OS stations. `amd64` is
+the real arch for `reel-edge` (app_image). Clients that request a missing
+arch fall back to `arm64` when present.
 
 ## Arch manifest — `.../manifest.<arch>.env`
 

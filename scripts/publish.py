@@ -31,7 +31,8 @@ Usage (OS image — reel-os):
     --source-repo reelcommerce/reel-os --source-sha "$GIT_SHA" \\
     --workflow build-image --run-id "$RUN_ID"
 
-At least one of --arch / --asset is required, and arm64 must be present.
+At least one of --arch / --asset is required. Fleet OS products
+provide arm64; amd64-only is valid for app_image products (reel-edge).
 
 Prints the release id on stdout.
 """
@@ -160,8 +161,8 @@ def main() -> int:
     if not arch_env and not asset_json:
         die("provide at least one --arch (docker pins) or --asset (OS image)")
     all_arches = set(arch_env) | set(asset_json)
-    if "arm64" not in all_arches:
-        die("arm64 is the default fleet arch and must be provided")
+    if "arm64" not in all_arches and "amd64" not in all_arches:
+        die("provide arm64 (fleet OS) and/or amd64 (app_image) via --arch / --asset")
 
     root = Path(args.catalog_root)
     rel_dir = root / "products" / args.product / "releases" / args.variant / release_id
