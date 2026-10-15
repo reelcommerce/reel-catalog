@@ -5,8 +5,8 @@ Public, immutable, digest-pinned release catalog for all Reel products.
 Supersedes `reel-releases`. Runtime clients resolve a release from three values:
 
 ```text
-PRODUCT   the publishing project — reel-docker | reel-builder | reel-edge
-VARIANT   the station flavour     — cinema | builder | edge
+PRODUCT   the publishing project — reel-docker | reel-builder | reel-edge | reel-node
+VARIANT   the station flavour     — cinema | builder | edge | node
 CHANNEL   the release track        — stable | latest | beta | nightly
 ```
 
@@ -18,6 +18,7 @@ resolved at first boot by the station's docker stack:
 | `reel-docker`  | `cinema` | reel-docker CI          | cinema-rpi station     |
 | `reel-builder` | `builder`| reel-builder CI         | builder-rpi station    |
 | `reel-edge`    | `edge`   | reel-edge CI (amd64)    | cinema site VM         |
+| `reel-node`    | `node`   | reel-node CI (arm64) + Reel Node OS bake | chain board (Besu via `BESU_IMAGE`) |
 
 Infisical (later bind): `/products/reel-edge/fleet` and `/products/reel-edge/sites/{site_id}` — same product id as this catalog.
 
