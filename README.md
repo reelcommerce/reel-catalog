@@ -7,7 +7,7 @@ Supersedes `reel-releases`. Runtime clients resolve a release from three values:
 ```text
 PRODUCT   the publishing project — reel-docker | reel-builder | reel-edge | reel-node
 VARIANT   the station flavour     — cinema | builder | edge | node
-CHANNEL   the release track        — stable | latest | beta | nightly
+CHANNEL   the release track        — dev | staging | stable | nightly
 ```
 
 The catalog tracks **container image pins** (compose `--env-file` friendly),
