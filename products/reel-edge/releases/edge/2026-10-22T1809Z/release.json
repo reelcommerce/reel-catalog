@@ -1,0 +1,18 @@
+{
+  "product": "reel-edge",
+  "variant": "edge",
+  "channel": "dev",
+  "release": "2026-10-22T1809Z",
+  "created_utc": "2026-10-22T18:09:08Z",
+  "source": {
+    "repo": "reelcommerce/reel-edge",
+    "sha": "a60505ef273b5fd92e3451e8a7be3aee0fcf76bd",
+    "workflow": "CI Build",
+    "run_id": "39826490304"
+  },
+  "architectures": {
+    "amd64": {
+      "env": "manifest.amd64.env"
+    }
+  }
+}
