@@ -80,3 +80,29 @@ Validation (enforced by `publish.py`):
 - `sha256` matches `^[a-f0-9]{64}$`
 - `url` begins with `https://`
 - no secret-looking tokens
+
+## Promote — `scripts/promote.py`
+
+Moves an existing channel pointer to an existing release id. Does **not**
+create a new release directory or rebuild images.
+
+```bash
+python3 scripts/promote.py \
+  --catalog-root . \
+  --product <product> --variant <variant> \
+  --to-channel staging|stable \
+  (--from-channel <channel> | --release-id <id>) \
+  [--dry-run]
+```
+
+Rules:
+
+- `--to-channel` must be `staging` or `stable` (CI Build owns `dev`; nightly owns `nightly`).
+- Exactly one of `--from-channel` / `--release-id`.
+- Target release must already exist under `products/<product>/releases/<variant>/<id>/`.
+- Channel files may be comment-only placeholders; promote overwrites them with a single release-id line.
+- Idempotent: if the target channel already points at the release id, exit 0.
+
+Site binding (outside this repo): a lab/canary site keeps one `site_id`, stores
+`channel` + Infisical env tag, and flips both when the pack is promoted. Real
+cinema sites stay on `channel=stable` and only reconcile after `stable` moves.
