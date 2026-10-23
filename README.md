@@ -60,27 +60,28 @@ pins with [`scripts/publish.py`](scripts/publish.py). After soak-test, CI
 **promotes** an existing release to `staging` / `stable` with
 [`scripts/promote.py`](scripts/promote.py) (channel pointer only — no rebuild).
 
-## Promotion (lab/canary site up the chain)
+## Site lifecycle (feature → field)
 
-Channels are not git branches. Routine `CI Build` stamps **`dev`** only.
-Promotion is an explicit human-triggered step after the pack has been tested
-on a lab site enrolled on that channel:
+Channels are not git branches. Git `main` is integration and feeds catalog
+**`dev`**. Production is catalog **`stable`** plus site Infisical env=`stable`.
+One new cinema / lab `site_id` walks the full chain; later field sites enroll
+on `stable` at an armed release without repeating local Vite.
 
 ```text
-feature → merge → CI Build → channel=dev
-        → install pack on lab site (channel=dev), Infisical env=dev
-        → test OK
-        → promote.py --from-channel dev --to-channel staging
-        → flip lab site channel + Infisical env → staging, re-Save / reconcile
-        → integration / UAT OK
-        → promote.py --from-channel staging --to-channel stable
-        → flip lab site → stable (optional) OR leave lab on staging
-        → production cinema sites (always channel=stable) pull the new pin
+L0  feature branch + local Vite  →  talk to a site created at env=dev
+L1  merge → main → CI Build      →  catalog channel=dev pin
+    reinstall pack on same site  →  non-Vite VM test of head cut
+L2  promote.py → staging         →  flip site channel + Infisical → staging
+    Environment tab / UAT        →  test stage backends + promoted frontend
+L3  promote.py → stable          →  flip site → stable (prod keys)
+    arm release id               →  freeze cut for field
+    push to field                →  cinema hardware on that stable pin
 ```
 
-Do **not** enroll a second stage VM for the lab path: one `site_id` walks
-`dev → staging → stable` with the pack. Production cinema sites never start
-on `dev`; they only consume `stable` pin moves.
+Routine `CI Build` stamps **`dev`** only. Staging/stable move only via
+[`scripts/promote.py`](scripts/promote.py) (or a product `workflow_dispatch`
+that runs it). The builder Environment tab should orchestrate pack promote +
+site env flip + key reload + Web-pack Save on the same `site_id`.
 
 Example (cinema web pack):
 
