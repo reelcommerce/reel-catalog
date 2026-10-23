@@ -62,39 +62,18 @@ pins with [`scripts/publish.py`](scripts/publish.py). After soak-test, CI
 
 ## Site lifecycle (feature → field)
 
-Channels are not git branches. Git `main` is integration and feeds catalog
-**`dev`**. Production is catalog **`stable`** plus site Infisical env=`stable`.
-One new cinema / lab `site_id` walks the full chain; later field sites enroll
-on `stable` at an armed release without repeating local Vite.
+**Review doc:** [`SDLC.md`](SDLC.md) — full propagation, promotion, cinema-card
+worked example, hotfix, and rollback (no long-lived stage/prod/hotfix git
+branches).
+
+In short: git `main` feeds catalog **`dev`**; production is catalog
+**`stable`** plus site Infisical env=`stable`. One lab `site_id` walks
+`dev → staging → stable`; field sites enroll on an armed `stable` release.
 
 ```text
-L0  feature branch + local Vite  →  talk to a site created at env=dev
-L1  merge → main → CI Build      →  catalog channel=dev pin
-    reinstall pack on same site  →  non-Vite VM test of head cut
-L2  promote.py → staging         →  flip site channel + Infisical → staging
-    Environment tab / UAT        →  test stage backends + promoted frontend
-L3  promote.py → stable          →  flip site → stable (prod keys)
-    arm release id               →  freeze cut for field
-    push to field                →  cinema hardware on that stable pin
+L0 Vite + dev site → L1 main/CI pin on VM → L2 promote+site to staging
+  → L3 promote+site to stable → arm → field
 ```
 
-Routine `CI Build` stamps **`dev`** only. Staging/stable move only via
-[`scripts/promote.py`](scripts/promote.py) (or a product `workflow_dispatch`
-that runs it). The builder Environment tab should orchestrate pack promote +
-site env flip + key reload + Web-pack Save on the same `site_id`.
-
-Example (cinema web pack):
-
-```bash
-python3 scripts/promote.py \
-  --catalog-root . \
-  --product reel-edge --variant cinema \
-  --from-channel dev --to-channel staging
-
-python3 scripts/promote.py \
-  --catalog-root . \
-  --product reel-edge --variant cinema \
-  --from-channel staging --to-channel stable
-```
-
-See [`SCHEMA.md`](SCHEMA.md) for the exact file contracts.
+Staging/stable move only via [`scripts/promote.py`](scripts/promote.py).
+File contracts: [`SCHEMA.md`](SCHEMA.md).
