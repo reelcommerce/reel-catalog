@@ -55,10 +55,11 @@ products/<product>/releases/<variant>/<release-id>/release.json
 products/<product>/releases/<variant>/<release-id>/manifest.<arch>.env
 ```
 
-Devices fetch over `raw.githubusercontent.com` (no clone). CI **publishes** new
-pins with [`scripts/publish.py`](scripts/publish.py). After soak-test, CI
-**promotes** an existing release to `staging` / `stable` with
-[`scripts/promote.py`](scripts/promote.py) (channel pointer only — no rebuild).
+Devices fetch over `raw.githubusercontent.com` (no clone). Intended interface:
+**Reel CLI** — `reel catalog publish` (new pin, usually `dev`) and
+`reel catalog promote` (move `staging` / `stable` to an existing release;
+pointer only — no rebuild). Engines live in [`scripts/publish.py`](scripts/publish.py)
+and [`scripts/promote.py`](scripts/promote.py) until the CLI wraps them.
 
 ## Site lifecycle (feature → field)
 
@@ -75,5 +76,5 @@ L0 Vite + dev site → L1 main/CI pin on VM → L2 promote+site to staging
   → L3 promote+site to stable → arm → field
 ```
 
-Staging/stable move only via [`scripts/promote.py`](scripts/promote.py).
-File contracts: [`SCHEMA.md`](SCHEMA.md).
+Staging/stable move only via `reel catalog promote` (engine:
+[`scripts/promote.py`](scripts/promote.py)). File contracts: [`SCHEMA.md`](SCHEMA.md).

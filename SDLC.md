@@ -4,9 +4,10 @@ How a software change moves from a feature branch to a cinema site in the
 field — without long-lived `stage` / `production` / `hotfix` git branches.
 
 This document is the reviewable contract for **propagation**, **promotion**,
-**hotfix**, and **rollback**. Tooling named here (`publish.py`, `promote.py`,
-builder Environment tab) is the intended mechanism; some pieces are already
-in this repo, others land in `reel-edge` / `reel-builder` / Infisical later.
+**hotfix**, and **rollback**. The **operator and CI interface** is the
+**Reel CLI** (`reel catalog publish` / `reel catalog promote`). Catalog
+scripts (`scripts/publish.py`, `scripts/promote.py`) are the engine the CLI
+(and CI) call. Builder Environment tab and Infisical wiring land later.
 
 ---
 
@@ -64,10 +65,10 @@ flowchart LR
     dev[channel dev]
     stg[channel staging]
     stab[channel stable]
-    main -->|CI Build publish.py| rel
+    main -->|CI Build reel catalog publish| rel
     rel --> dev
-    dev -->|promote.py| stg
-    stg -->|promote.py| stab
+    dev -->|reel catalog promote| stg
+    stg -->|reel catalog promote| stab
   end
   subgraph site [Lab site_id]
     sDev[env dev]
@@ -101,7 +102,7 @@ flowchart LR
 | | |
 | --- | --- |
 | **Git** | PR merged into `main`. |
-| **Build** | `reel-edge` **CI Build** flavour-bakes cinema (pulls in `reel-web` at bake time) → pushes GHCR digest → `publish.py` writes a new release and points **`dev`** at it. |
+| **Build** | `reel-edge` **CI Build** flavour-bakes cinema (pulls in `reel-web` at bake time) → pushes GHCR digest → `reel catalog publish` writes a new release and points **`dev`** at it. |
 | **Site** | Same lab site stays on channel=`dev` / Infisical env=`dev`. **Reinstall / Web-pack Save** so the VM runs the pinned image (not Vite). |
 | **Exit** | Smoke / integration on the non-Vite head cut of `main`. |
 
@@ -112,7 +113,7 @@ Every merge to `main` can move `dev`. Staging and stable do **not** chase
 
 | | |
 | --- | --- |
-| **Promote pack** | `promote.py --from-channel dev --to-channel staging` (or promote an explicit `--release-id`). Same digests; only `staging.txt` moves. |
+| **Promote pack** | `reel catalog promote … --from-channel dev --to-channel staging` (or an explicit `--release-id`). Same digests; only `staging.txt` moves. |
 | **Promote site** | Builder **Environment** tab (or equivalent): flip site channel → `staging`, Infisical env → `staging`, reload keys / backend endpoints, reconcile pack. |
 | **Test** | UAT against stage backends, secrets, and the promoted frontend on that same site. |
 | **Exit** | Sign-off that this release id is candidate for production. |
@@ -124,7 +125,7 @@ environment.
 
 | | |
 | --- | --- |
-| **Promote pack** | `promote.py --from-channel staging --to-channel stable`. |
+| **Promote pack** | `reel catalog promote … --from-channel staging --to-channel stable`. |
 | **Promote site** | Flip lab site to channel=`stable`, Infisical env=`stable` (prod keys). |
 | **Arm** | Ops gate: freeze the release id as field-ready (checklist / builder “Arm”). Optional git tag for humans, e.g. `cinema-stable-2026-11-03T1412Z`. |
 | **Field** | Push / enroll cinema hardware on catalog `stable` at that release. Later sites enroll directly on `stable` — they skip L0/L1 Vite. |
@@ -139,43 +140,73 @@ is on git `main` right now.”
 Promotion is deliberately boring:
 
 ```text
-publish.py   → creates immutable release + moves `dev` (CI Build)
-promote.py   → moves `staging` or `stable` to an *existing* release id
-                 (no rebuild, no new digest)
+reel catalog publish  → creates immutable release + moves `dev` (CI Build)
+reel catalog promote  → moves `staging` or `stable` to an *existing* release id
+                        (no rebuild, no new digest)
 ```
 
-### 4.1 Pack promote (catalog)
+### 4.0 Reel CLI (preferred interface)
+
+Publish and promote are **Reel CLI** subcommands. Product CI and humans use
+the same surface; the CLI checks out / updates `reel-catalog` and delegates
+to the catalog engines (`scripts/publish.py`, `scripts/promote.py`) until
+those engines live inside the CLI package.
+
+Proposed commands:
 
 ```bash
-# After L1 soak on the lab site
-python3 scripts/promote.py \
-  --catalog-root . \
+# CI Build — after flavour bake produced arch pin files
+reel catalog publish \
+  --product reel-edge --variant cinema --channel dev \
+  --arch amd64=release_out/manifest.amd64.env \
+  --source-repo reelcommerce/reel-edge --source-sha "$GIT_SHA" \
+  --workflow "CI Build" --run-id "$RUN_ID"
+
+# After L1 soak — promote the tip you tested (prefer --release-id)
+reel catalog promote \
   --product reel-edge --variant cinema \
   --from-channel dev --to-channel staging
 
-# After L2 UAT
-python3 scripts/promote.py \
-  --catalog-root . \
-  --product reel-edge --variant cinema \
-  --from-channel staging --to-channel stable
-```
-
-Or pin an exact cut (recommended when `dev` may have moved since you tested):
-
-```bash
-python3 scripts/promote.py \
-  --catalog-root . \
+reel catalog promote \
   --product reel-edge --variant cinema \
   --release-id 2026-11-03T1412Z --to-channel staging
+
+# After L2 UAT → production
+reel catalog promote \
+  --product reel-edge --variant cinema \
+  --from-channel staging --to-channel stable
+
+# Rollback = promote an older release id to the same channel
+reel catalog promote \
+  --product reel-edge --variant cinema \
+  --release-id 2026-11-03T1412Z --to-channel stable
 ```
+
+CLI responsibilities (beyond calling the engine):
+
+| Concern | Behaviour |
+| ------- | --------- |
+| Auth / git | Clone or reuse catalog checkout; commit channel pointer (and new release tree on publish); push with a bot identity |
+| Flags | Mirror engine flags (`--product`, `--variant`, `--channel` / `--to-channel`, `--from-channel` \| `--release-id`, `--arch`, `--dry-run`) |
+| Output | Print release id; exit non-zero on validation failure |
+| CI | `reel-edge` (etc.) invoke `reel catalog publish` from **CI Build**; `workflow_dispatch` invokes `reel catalog promote` |
+| Humans | Same commands locally / on a runner after soak — no raw `python3 scripts/…` required |
+
+Until the CLI ships, CI may call `python3 scripts/publish.py` /
+`python3 scripts/promote.py` directly against a catalog checkout. The
+flag sets stay aligned so the switch is a command-prefix change.
+
+### 4.1 Pack promote (catalog)
 
 Rules:
 
 - `--to-channel` is only `staging` or `stable` (`dev` / `nightly` stay CI-owned).
 - Target release must already exist under `products/<product>/releases/<variant>/`.
 - Idempotent if the channel already points at that release.
-- Intended CI shape: `workflow_dispatch` on the product repo that checks out
-  this catalog, runs `promote.py`, commits the pointer file.
+- Prefer `--release-id` once you leave pure `dev` chasing, so a newer merge
+  cannot silently change what you promote.
+- Intended CI shape: `workflow_dispatch` **Promote** runs
+  `reel catalog promote`, then the CLI commits/pushes the pointer.
 
 ### 4.2 Site promote (builder + Infisical)
 
@@ -233,7 +264,9 @@ Scenario: add a new **Cinema card** component to the cinema web app
    is now” if more merges landed). Prefer:
 
    ```bash
-   promote.py … --release-id 2026-11-03T1412Z --to-channel staging
+   reel catalog promote \
+     --product reel-edge --variant cinema \
+     --release-id 2026-11-03T1412Z --to-channel staging
    ```
 
 2. Environment tab → **Staging**: site channel + Infisical env → `staging`,
@@ -243,7 +276,7 @@ Scenario: add a new **Cinema card** component to the cinema web app
 
 ### Step D — Promote to production and field (L3)
 
-1. `promote.py … --release-id 2026-11-03T1412Z --to-channel stable`
+1. `reel catalog promote … --release-id 2026-11-03T1412Z --to-channel stable`
    (or `--from-channel staging` if staging tip is still that id).
 2. Environment tab → **Production**: site env → `stable`, prod keys.
 3. **Arm** release `2026-11-03T1412Z`.
@@ -336,8 +369,7 @@ Example: `stable` was moved to `2026-11-04T0915Z` and misbehaves; previous
 good cut was `2026-11-03T1412Z`.
 
 ```bash
-python3 scripts/promote.py \
-  --catalog-root . \
+reel catalog promote \
   --product reel-edge --variant cinema \
   --release-id 2026-11-03T1412Z \
   --to-channel stable
@@ -383,10 +415,10 @@ The same pattern applies to `staging` if UAT needs to step back.
 | --------- | ---- | ---------- |
 | Git branch `main` | Integration source | Every merged PR |
 | Feature / fix branch | Short-lived work | Deleted after merge |
-| Catalog release id | Immutable artifact | Created once by `publish.py` |
+| Catalog release id | Immutable artifact | Created once by `reel catalog publish` |
 | Channel `dev` | Hot head cut | Every CI Build publish |
-| Channel `staging` | UAT cut | Explicit `promote.py` |
-| Channel `stable` | Production cut | Explicit `promote.py` |
+| Channel `staging` | UAT cut | Explicit `reel catalog promote` |
+| Channel `stable` | Production cut | Explicit `reel catalog promote` |
 | Git tag (optional) | Human/audit label at arm | Never required for resolve |
 | Site Infisical env | Secrets + backend URLs | Environment tab with promote |
 
@@ -401,13 +433,13 @@ path.
 | ---- | ---------- |
 | Feature + Vite vs lab site | Developer (`reel-web` / `reel-edge`) |
 | Merge to `main` | PR review |
-| Publish to catalog `dev` | Product CI (`publish.py`) |
+| Publish to catalog `dev` | Product CI via `reel catalog publish` |
 | Reinstall pack on lab VM | Operator / developer (builder) |
-| Promote channel pointer | `promote.py` via workflow_dispatch or CLI |
+| Promote channel pointer | `reel catalog promote` (workflow_dispatch or human) |
 | Flip site env + keys | Builder Environment tab + Infisical |
 | Arm | Ops / builder checklist |
 | Field push | Ops (`reel-os` / enroll / reconcile) |
-| Rollback channel tip | Same promote path with older `--release-id` |
+| Rollback channel tip | `reel catalog promote` with older `--release-id` |
 
 ---
 
@@ -416,13 +448,16 @@ path.
 These realise the UX described above but are not required to agree the
 model:
 
-- `workflow_dispatch` **Promote** job on `reel-edge` (and siblings).
+- **Reel CLI:** `reel catalog publish` and `reel catalog promote` (wrap
+  catalog engines; commit/push catalog changes; used by CI and humans).
+- `workflow_dispatch` **Promote** job on `reel-edge` (and siblings) calling
+  the CLI.
 - Builder **Environment** tab wiring (promote + Infisical flip + reconcile).
 - Vite → lab-site env templates in `reel-web`.
 - Arm + field-push automation.
 
 Catalog pieces that already support the model: channel layout,
-`scripts/publish.py`, `scripts/promote.py`, and this SDLC.
+`scripts/publish.py`, `scripts/promote.py` (CLI engines), and this SDLC.
 
 ---
 
@@ -438,9 +473,13 @@ No. `main` feeds catalog `dev`. Production is catalog `stable`.
 **Does promote rebuild the image?**  
 No. Same digest; pointer move only.
 
+**How do we publish / promote day to day?**  
+`reel catalog publish` (CI after bake) and `reel catalog promote` (after
+soak / for rollback). Scripts under `scripts/` are the engines.
+
 **How do we roll back?**  
-Point `stable` (or `staging`) at a previous release id with `promote.py`,
-then reconcile sites.
+`reel catalog promote … --release-id <older> --to-channel stable` (or
+`staging`), then reconcile sites.
 
 **How does a hotfix get into the “next” release?**  
 It merges to `main`, so the next `dev` bake already contains it; that

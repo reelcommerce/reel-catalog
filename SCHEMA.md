@@ -81,12 +81,20 @@ Validation (enforced by `publish.py`):
 - `url` begins with `https://`
 - no secret-looking tokens
 
-## Promote — `scripts/promote.py`
+## Promote — `reel catalog promote` (engine: `scripts/promote.py`)
 
 Moves an existing channel pointer to an existing release id. Does **not**
-create a new release directory or rebuild images.
+create a new release directory or rebuild images. Preferred entrypoint is
+the Reel CLI; the script is the catalog-side engine.
 
 ```bash
+reel catalog promote \
+  --product <product> --variant <variant> \
+  --to-channel staging|stable \
+  (--from-channel <channel> | --release-id <id>) \
+  [--dry-run]
+
+# Engine (CI / CLI implementation detail):
 python3 scripts/promote.py \
   --catalog-root . \
   --product <product> --variant <variant> \
