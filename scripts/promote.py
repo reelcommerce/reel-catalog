@@ -6,8 +6,8 @@ Does not rebuild images or write a new release tree. Used after a pin on
 `dev` (or another source channel) has been soak-tested, to advance
 `staging` then `stable` to that same release id.
 
-Invoked by a product CI workflow_dispatch (or manually) that has checked
-out the catalog repo:
+Catalog engine for `reel catalog promote`. Invoked by the Reel CLI or by a
+product CI workflow_dispatch that has checked out the catalog repo:
 
   # Promote whatever currently tips cinema/dev → cinema/staging
   python3 scripts/promote.py \\

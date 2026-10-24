@@ -2,7 +2,8 @@
 """
 publish.py — write an immutable release into reel-catalog and move a channel.
 
-Invoked by product CIs (reel-docker, reel-builder, reel-os) that have checked
+Catalog engine for `reel catalog publish`. Invoked by the Reel CLI or by
+product CIs (reel-docker, reel-builder, reel-edge, reel-os) that have checked
 out the catalog repo. Given one or more arch pin files and/or OS-image
 descriptors, it writes:
 
