@@ -1,1 +1,1 @@
-# Electron commerce shell — stamp lands here from reel-app CI (variant commerce).
+# Commerce application (reel-web apps/commerce) — IPFS content stamp lands here from reel-web CI (product reel-app, variant commerce).

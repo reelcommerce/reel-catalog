@@ -35,17 +35,22 @@ Single line, the release id it currently points at:
 Each architecture entry references one or both artifact kinds:
 
 - `"env": "manifest.<arch>.env"` — docker image pins (reel-docker, reel-builder).
-- `"image": "image.<platform>.json"` — a flashable OS image (reel-os) or a shell installer (reel-app).
+- `"image": "image.<platform>.json"` — a flashable OS image (reel-os) or a shell installer (reel-shell).
+- `"content": "content.json"` — an IPFS application (reel-app). No `architectures` entry.
 
 `arm64` is the default fleet arch for cinema/builder OS stations. `amd64` is
 the real arch for `reel-edge` (app_image). Clients that request a missing
 arch fall back to `arm64` when present.
 
-Shell products (`reel-app`, variants `cinema`, `pos`, `commerce`, `display`)
+Shell products (`reel-shell`, variants `cinema`, `pos`, `commerce`, `display`)
 do not publish docker pins. Each installer is an asset descriptor whose
 platform key is one of `win-x64`, `darwin-x64`, `darwin-arm64`, `linux-x64`,
 `linux-arm64`, `android-tv`, `android-mobile`. The file name is
 `image.<platform>.json` and the JSON shape matches the OS-image manifest.
+
+Application products (`reel-app`, the same variants) publish `content.json`
+instead of an architecture map. `reel-web` builds the app. The shell loads it
+from IPFS.
 
 ## Arch manifest — `.../manifest.<arch>.env`
 
@@ -86,6 +91,23 @@ Validation (enforced by `publish.py`):
 - `sha256` matches `^[a-f0-9]{64}$`
 - `url` begins with `https://`
 - no secret-looking tokens
+
+## Application manifest — `.../content.json`
+
+The web application a `reel-shell` window loads. The bytes live on IPFS. The
+catalog records the pin:
+
+```json
+{
+  "cid": "bafyrei...",
+  "ipns": "k51qzi5u...",
+  "sha256": "<64hex>",
+  "url": "https://ipfs.io/ipns/k51qzi5u.../"
+}
+```
+
+`url` is optional. `cid` is CIDv0 (`Qm…`) or CIDv1 base32 (`b…`). `ipns` is
+the name only, without a `/ipns/` prefix. `sha256` is the build tree digest.
 
 ## Promote — `reel catalog promote` (engine: `scripts/promote.py`)
 

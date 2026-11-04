@@ -1,1 +1,1 @@
-# Electron POS shell — stamp lands here from reel-app CI (variant pos).
+# POS application (reel-web apps/pos) — IPFS content stamp lands here from reel-web CI (product reel-app, variant pos).

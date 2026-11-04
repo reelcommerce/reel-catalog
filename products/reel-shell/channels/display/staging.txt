@@ -1,0 +1,1 @@
+# Android display shell — installer stamp lands here from reel-shell CI (variant display).

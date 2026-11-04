@@ -1,0 +1,1 @@
+# Electron cinema shell — installer stamp lands here from reel-shell CI (variant cinema).
