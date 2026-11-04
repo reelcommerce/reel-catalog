@@ -5,8 +5,8 @@ Public, immutable, digest-pinned release catalog for all Reel products.
 Supersedes `reel-releases`. Runtime clients resolve a release from three values:
 
 ```text
-PRODUCT   the publishing project — reel-docker | reel-builder | reel-edge | reel-node
-VARIANT   the station flavour     — cinema | builder | edge | node | ads | pos
+PRODUCT   the publishing project — reel-docker | reel-builder | reel-edge | reel-node | reel-app
+VARIANT   the station flavour     — cinema | builder | edge | node | ads | pos | commerce | display
 CHANNEL   the release track        — dev | staging | stable | nightly
 ```
 
@@ -19,6 +19,7 @@ resolved at first boot by the station's docker stack:
 | `reel-builder` | `builder`| reel-builder CI         | builder-rpi station    |
 | `reel-edge`    | `cinema` / `ads` / `pos` | reel-edge CI (amd64) | site VM web pack (`edge` leftover) |
 | `reel-node`    | `node`   | reel-node CI (arm64) + Reel Node OS bake | chain board (Besu via `BESU_IMAGE`) |
+| `reel-app`     | `cinema` / `pos` / `commerce` / `display` | reel-app CI | desktop and Android shells (`image.<platform>.json`) |
 
 Infisical (later bind): `/products/reel-edge/fleet` and `/products/reel-edge/sites/{site_id}` — same product id as this catalog. Lab/canary sites keep one `site_id` and flip an env tag (`dev` → `staging` → `stable`) when promoted; real cinema sites stay on `stable` only.
 
@@ -42,6 +43,7 @@ products/
           release.json         # metadata + arch index
           manifest.arm64.env   # KEY=repo@sha256 pins (compose --env-file friendly)
           manifest.amd64.env   # optional; arch stub allowed
+          image.<platform>.json # OS image (reel-os) or shell installer (reel-app)
           notes.md
 ```
 

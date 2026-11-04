@@ -35,11 +35,17 @@ Single line, the release id it currently points at:
 Each architecture entry references one or both artifact kinds:
 
 - `"env": "manifest.<arch>.env"` — docker image pins (reel-docker, reel-builder).
-- `"image": "image.<arch>.json"` — a flashable OS image (reel-os).
+- `"image": "image.<platform>.json"` — a flashable OS image (reel-os) or a shell installer (reel-app).
 
 `arm64` is the default fleet arch for cinema/builder OS stations. `amd64` is
 the real arch for `reel-edge` (app_image). Clients that request a missing
 arch fall back to `arm64` when present.
+
+Shell products (`reel-app`, variants `cinema`, `pos`, `commerce`, `display`)
+do not publish docker pins. Each installer is an asset descriptor whose
+platform key is one of `win-x64`, `darwin-x64`, `darwin-arm64`, `linux-x64`,
+`linux-arm64`, `android-tv`, `android-mobile`. The file name is
+`image.<platform>.json` and the JSON shape matches the OS-image manifest.
 
 ## Arch manifest — `.../manifest.<arch>.env`
 

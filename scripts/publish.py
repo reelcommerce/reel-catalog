@@ -32,8 +32,10 @@ Usage (OS image — reel-os):
     --source-repo reelcommerce/reel-os --source-sha "$GIT_SHA" \\
     --workflow build-image --run-id "$RUN_ID"
 
-At least one of --arch / --asset is required. Fleet OS products
-provide arm64; amd64-only is valid for app_image products (reel-edge).
+At least one of --arch / --asset is required. Docker pins (--arch) are
+arm64 and/or amd64. OS images use --asset arm64 or amd64. Reel shells
+(reel-app) use --asset with an installer platform: win-x64, darwin-x64,
+darwin-arm64, linux-x64, linux-arm64, android-tv, android-mobile.
 
 Prints the release id on stdout.
 """
@@ -51,6 +53,17 @@ SECRET_RE = re.compile(r"(AKIA|ASIA|SECRET|TOKEN|PASSWORD|BEGIN PRIVATE KEY|----
 ID_RE = re.compile(r"^[0-9A-Za-z._:\-]+$")
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 SHA256_RE = re.compile(r"^[a-f0-9]{64}$")
+FLEET_ARCHES = frozenset({"arm64", "amd64"})
+# reel-app installer pointers (image.<platform>.json). Not docker arches.
+INSTALLER_PLATFORMS = frozenset({
+    "win-x64",
+    "darwin-x64",
+    "darwin-arm64",
+    "linux-x64",
+    "linux-arm64",
+    "android-tv",
+    "android-mobile",
+})
 
 
 def die(msg: str) -> None:
@@ -127,7 +140,11 @@ def main() -> int:
         action="append",
         default=[],
         metavar="ARCH=PATH",
-        help="Repeatable OS-image descriptor JSON. e.g. --asset arm64=release_out/image.arm64.json",
+        help=(
+            "Repeatable asset descriptor JSON. "
+            "e.g. --asset arm64=release_out/image.arm64.json "
+            "or --asset win-x64=release_out/image.win-x64.json"
+        ),
     )
     ap.add_argument("--release-id", default="")
     ap.add_argument("--source-repo", default="")
@@ -160,10 +177,18 @@ def main() -> int:
     arch_env = parse_specs(args.arch, "--arch")
     asset_json = parse_specs(args.asset, "--asset")
     if not arch_env and not asset_json:
-        die("provide at least one --arch (docker pins) or --asset (OS image)")
+        die("provide at least one --arch (docker pins) or --asset (OS image or installer)")
+    for arch in arch_env:
+        if arch not in FLEET_ARCHES:
+            die(f"docker pin arch must be arm64 or amd64, got {arch}")
+    allowed_assets = FLEET_ARCHES | INSTALLER_PLATFORMS
+    for arch in asset_json:
+        if arch not in allowed_assets:
+            die(
+                "asset platform must be arm64, amd64, or an installer platform "
+                f"({', '.join(sorted(INSTALLER_PLATFORMS))}), got {arch}"
+            )
     all_arches = set(arch_env) | set(asset_json)
-    if "arm64" not in all_arches and "amd64" not in all_arches:
-        die("provide arm64 (fleet OS) and/or amd64 (app_image) via --arch / --asset")
 
     root = Path(args.catalog_root)
     rel_dir = root / "products" / args.product / "releases" / args.variant / release_id

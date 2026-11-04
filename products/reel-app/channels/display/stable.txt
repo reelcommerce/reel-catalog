@@ -1,0 +1,1 @@
+# Android display shell — stamp lands here from reel-app CI (variant display).
